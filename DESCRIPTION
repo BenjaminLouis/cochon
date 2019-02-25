@@ -1,9 +1,26 @@
 Package: cochon2019a
 Title: What the Package Does (one line, title case)
 Version: 0.0.0.9000
-Authors@R: person("First", "Last", email = "first.last@example.com", role = c("aut", "cre"))
+Authors@R: 
+    person(given = "Benjamin",
+           family = "Louis",
+           role = c("aut", "cre"),
+           email = "contact@benjaminlouis-stat.fr")
 Description: What the package does (one paragraph).
-Depends: R (>= 3.5.1)
-License: What license is it under?
+License: MIT + file LICENSE
+Depends: 
+    R (>= 2.10)
+Imports: 
+    dplyr,
+    stringr,
+    tidyr
+Suggests: 
+    kableExtra,
+    knitr,
+    rmarkdown,
+    tidyverse
+VignetteBuilder: 
+    knitr
 Encoding: UTF-8
 LazyData: true
+RoxygenNote: 6.1.1

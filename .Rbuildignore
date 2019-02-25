@@ -1,3 +1,5 @@
+^LICENSE\.md$
+^data-raw$
 ^devstuffs_history\.R$
 ^cochon2019a\.Rproj$
 ^\.Rproj\.user$

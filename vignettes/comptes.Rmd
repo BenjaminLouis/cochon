@@ -1,0 +1,421 @@
+---
+title: "Description des comptes du cochon 2019"
+author: "Benjamin Louis"
+date: "`r format(Sys.Date(), '%d-%m-%Y')`"
+output:
+  rmarkdown::html_vignette:
+  pdf_document:
+    keep_tex: yes
+    latex_engine: xelatex
+  pagedown::html_paged:
+    number_sections: false
+    css: ["my_style.css", "default-fonts", "default-page", "default"]
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  echo = FALSE,
+  fig.align = "center",
+  fig.keep = "all",
+  out.width = "100%",
+  dpi = 300,
+  fig.asp = 0.6,
+  fig.width = 6
+)
+library(cochon2019a)
+library(tidyverse)
+library(kableExtra)
+options(knitr.kable.NA = '')
+data(repartition)
+data(recettes)
+data(gener)
+data(coefs)
+data(depenses)
+```
+
+# Généralités
+
+## Prix global de la viande
+
+```{r}
+gener %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+## Répartition dans les recettes
+
+```{r}
+recettes %>% 
+  mutate_if(is.numeric, ~recode(., `0` = NA_real_)) %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+# Prix des différentes recettes en fonction de leur conditionnement
+
+## Méthode de calcul
+
+Bien qu'un travail collectif de collecte de données ait été effectué lors de ce week-end, certaines données sont manquantes ou trop imprécises pour pouvoir calculer un prix exact de chaque recette. Ainsi certaines simplifications méthodologiques ont du être faites.
+
++ Le prix d'une recette est calculé par rapport au prix de la quantité de viande et/ou foie et/ou chair qu'elles contient
+
++ Le gras n'étant pas limitant il n'est pas comptabilisé (ou son prix est égal à 0€ si vous préférez). Ainsi, plus une recette contient en proportion du gras, moins elle est chère en unité de poids. He oui, le cholestérol ne vaut pas grand chose!
+
++ Les autres ingrédients des différentes recettes sont intégrés dans le prix total des courses du weekend qui est divisé au prorata du nombre de personnes. Le prix des ingrédients n'est donc pas contenu dans le prix des recettes.
+
++ De même, les boyaux sont intégrés au prix total des courses et non pas dans le prix des différentes recettes. on pourrait en théorie le faire mais les données sont trop imprécises pour que ça ait du sens. Une estimation très rapide _"à la louche"_ conduit à un prix d'environ 30 cents de boyau pour une saucisse sèche ou un saucisson, environ 20 cents de boyau pour une chipo et environ 3 cents de boyau pour une saucisse fraiche ou un boudin.
+
+## Terrine et pâtés
+
+### Pâté de foie
+
+```{r}
+pu_foie <- get_unitaire("pate_foie") 
+price_foie <- get_price("pate_foie", unit = pu_foie)
+
+pu_foie %>% 
+  kable(booktabs = TRUE, digits = 2)
+price_foie %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+### Pâté de campagne
+
+```{r}
+pu_campagne <- get_unitaire("pate_campagne") 
+price_campagne <- get_price("pate_campagne", unit = pu_campagne)
+
+pu_campagne %>% 
+  kable(booktabs = TRUE, digits = 2)
+price_campagne %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+### Terrine au four
+
+```{r}
+pu_terrine <- recettes %>% filter(recettes == "terrine_four") %>% pull(prix_total)
+price_terrine <- get_price("terrine_four", unit = pu_terrine)
+
+price_terrine %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+### Jambonneau
+
+```{r}
+pu_jambonneau <- recettes %>% filter(recettes == "jambonneau") %>% pull(prix_total)
+price_jambonneau <- get_price("jambonneau", unit = pu_jambonneau)
+
+price_jambonneau %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+### Caillettes
+
+```{r}
+pu_caillettes <- recettes %>% filter(recettes == "caillettes") %>% pull(prix_total)
+price_caillettes <- get_price("caillettes", unit = pu_caillettes)
+
+price_caillettes %>%
+  kable(booktabs = TRUE, digits = 2)
+```
+
+### Pâté de tête et rillettes
+
+## Boudin
+
+### Boudin blanc
+
+```{r}
+pu_boudin_blanc <- recettes %>% filter(recettes == "boudin_blanc") %>% pull(prix_total)
+price_boudin_blanc <- get_price("boudin_blanc", unit = pu_boudin_blanc)
+
+price_boudin_blanc %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+### Boudins noir et créole
+
+## Saucisses fraiches et chipolatas
+
+### Saucisses fraiches
+
+```{r}
+nb_saucisses <- repartition %>% 
+  filter(produit %in% c("saucisses_fraiches", "saucisses_viandes", "bocaux_saucisses")) %>% 
+  select(-recettes) %>% 
+  gather("key", "value", steph_luc:casse) %>% 
+  group_by(produit) %>% 
+  summarise(nb = sum(value)) %>% 
+  mutate(coef = recode(produit, bocaux_saucisses = 4, saucisses_fraiches = 1, saucisses_viandes = 2)) %>% 
+  mutate(n = nb*coef) %>% 
+  pull(n) %>% 
+  sum()
+prix_saucisses <- recettes %>% filter(recettes == "saucisses_fraiches") %>% pull(prix_total)
+pu_saucisses_fraiches <- tibble(produit = "saucisses_fraiches",
+                                prix_unitaire = prix_saucisses/nb_saucisses)
+price_saucisses_fraiches <- get_price("saucisses_fraiches", unit = pu_saucisses_fraiches)
+
+price_saucisses_fraiches %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+### chipolatas
+
+```{r}
+pu_chipo <- recettes %>% filter(recettes == "chipolatas") %>% pull(prix_total)
+price_chipo <- get_price("chipolatas", unit = pu_chipo)
+
+price_chipo %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+## Saucisses sèches et saucissons
+
+### Saucisses sèches
+
+```{r}
+pu_saucisses_seches <- recettes %>% filter(recettes == "saucisses_seches") %>% pull(prix_total)
+price_saucisses_seches  <- get_price("saucisses_seches", unit = pu_saucisses_seches)
+
+price_saucisses_seches %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+### saucissons
+
+```{r}
+pu_saucissons <- recettes %>% filter(recettes == "saucissons") %>% pull(prix_total)
+price_saucissons  <- get_price("saucissons", unit = pu_saucissons)
+
+price_saucissons %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+### chorizo
+
+```{r}
+pu_chorizo <- recettes %>% filter(recettes == "chorizo") %>% pull(prix_total)
+price_chorizo  <- get_price("chorizo", unit = pu_chorizo)
+
+price_chorizo %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+## Bocaux viandes
+
+### Bocaux viandes et/ou saucisses
+
+```{r}
+pu_bocaux_viandes <- get_unitaire("bocaux_viandes", prix_sauc = pull(pu_saucisses_fraiches, prix_unitaire)) 
+price_bocaux_viandes <- get_price("bocaux_viandes", unit = pu_bocaux_viandes)
+
+pu_bocaux_viandes %>% 
+  kable(booktabs = TRUE, digits = 2)
+price_bocaux_viandes %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+### Bocaux jambonneau
+
+```{r}
+pu_bocaux_jambonneau <- recettes %>% filter(recettes == "bocaux_jambonneau") %>% pull(prix_total) 
+price_bocaux_jambonneau <- get_price("bocaux_jambonneau", unit = pu_bocaux_jambonneau)
+
+price_bocaux_jambonneau %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+## Viandes fraiches
+
+### Côte de porc
+
+```{r}
+pu_cote_de_porc <- recettes %>% filter(recettes == "cote_de_porc") %>% pull(prix_total)
+price_cote_de_porc  <- get_price("cote_de_porc", unit = pu_cote_de_porc)
+
+price_cote_de_porc %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+### Rouelle
+
+```{r}
+pu_rouelle <- recettes %>% filter(recettes == "rouelle") %>% pull(prix_total)
+price_rouelle  <- get_price("rouelle", unit = pu_rouelle)
+
+price_rouelle %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+### Roti
+
+```{r}
+pu_roti <- recettes %>% filter(recettes == "roti") %>% pull(prix_total)
+price_roti  <- get_price("roti", unit = pu_roti)
+
+price_roti %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+### Filet mignon
+
+```{r}
+pu_filet_mignon <- recettes %>% filter(recettes == "filet_mignon") %>% pull(prix_total)
+price_filet_mignon  <- get_price("filet_mignon", unit = pu_filet_mignon)
+
+price_filet_mignon %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+### Ribs
+
+```{r}
+pu_ribs <- recettes %>% filter(recettes == "ribs") %>% pull(prix_total)
+price_ribs  <- get_price("ribs", unit = pu_ribs)
+
+price_ribs %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+## Viandes sèches
+
+### Poitrine
+
+```{r}
+pu_poitrine <- recettes %>% filter(recettes == "poitrine") %>% pull(prix_total)
+price_poitrine  <- get_price("poitrine", unit = pu_poitrine)
+
+price_poitrine %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+### Jambon
+
+```{r}
+pu_jambon <- recettes %>% filter(recettes == "jambon") %>% pull(prix_total)
+price_jambon  <- get_price("jambon", unit = pu_jambon)
+
+price_jambon %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+### Autres viandes
+
+```{r}
+pu_autres_viandes_seches <- recettes %>% filter(recettes == "autres_viandes_seches") %>% pull(prix_total)
+price_autres_viandes_seches  <- get_price("autres_viandes_seches", unit = pu_autres_viandes_seches)
+
+price_autres_viandes_seches %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+
+# Prix à payer par personne
+
+## La viande
+
+```{r}
+all_prices <- bind_rows(
+  mutate(price_foie, recettes = "pate_foie"),
+  mutate(price_campagne, recettes = "pate_campagne"),
+  mutate(price_terrine, recettes = "pate_terrine_four"),
+  mutate(price_jambonneau, recettes = "jambonneau"),
+  mutate(price_caillettes, recettes = "caillettes"),
+  mutate(price_boudin_blanc, recettes = "boudin_blanc"),
+  mutate(price_saucisses_fraiches, recettes = "saucisses_fraiches"),
+  mutate(price_chipo, recettes = "chipolatas"),
+  mutate(price_saucisses_seches, recettes = "saucisses_seches"),
+  mutate(price_saucissons, recettes = "saucissons"),
+  mutate(price_chorizo, recettes = "chorizo"),
+  mutate(price_bocaux_viandes, recettes = "bocaux_viandes"),
+  mutate(price_bocaux_jambonneau, recettes = "bocaux_jambonneau"),
+  mutate(price_cote_de_porc, recettes = "cote_de_porc"),
+  mutate(price_rouelle, recettes = "rouelle"),
+  mutate(price_roti, recettes = "roti"),
+  mutate(price_filet_mignon, recettes = "filet_mignon"),
+  mutate(price_ribs, recettes = "ribs"),
+  mutate(price_poitrine, recettes = "poitrine"),
+  mutate(price_jambon, recettes = "jambon"),
+  mutate(price_autres_viandes_seches, recettes = "autees_viandes_seches")
+) %>% 
+  select(recettes, qui, doit_payer) %>% 
+  group_by(qui) %>% 
+  summarise(doit_payer = sum(doit_payer))
+
+all_prices %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+
+## Achats commun
+
+```{r}
+price_commun <- bind_rows(
+  depenses %>%
+    filter(achat != "cochon") %>%
+    select(-acheteur) %>% 
+    group_by(achat) %>% 
+    summarise(doit_payer = sum(prix)),
+  all_prices %>% 
+    filter(qui %in% c("commun", "dons", "casse")) %>% 
+    rename(achat = qui) %>% 
+    mutate(achat = paste0("cochon_", achat))
+)
+price_commun_total <- pull(price_commun, doit_payer) %>% sum
+
+price_commun %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+
+```{r}
+all_commun <- all_prices %>% 
+  filter(!qui %in% c("commun", "dons", "casse")) %>% 
+  select(-doit_payer) %>% 
+  mutate(nb_personne = map_int(qui, ~length(str_split(.x, "_", simplify = TRUE)))) %>% 
+  mutate(doit_payer = nb_personne*price_commun_total/sum(nb_personne)) %>% 
+  select(-nb_personne) 
+all_commun %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+## Total
+
+```{r}
+total_prices <- bind_rows(
+  all_prices %>% 
+    filter(!qui %in% c("commun", "dons", "casse")), 
+  all_commun
+  ) %>% 
+  group_by(qui) %>% 
+  summarise(doit_payer = sum(doit_payer))
+total_prices %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+# Qui doit à qui ?
+
+```{r}
+bilan <- full_join(
+  rename(depenses, qui = acheteur) %>% 
+    group_by(qui) %>% 
+    summarize(a_paye = sum(prix)),
+  total_prices,
+  by = "qui"
+) %>% 
+  mutate(a_paye = ifelse(is.na(a_paye), 0, a_paye),
+         doit_payer = ifelse(is.na(doit_payer), 0, doit_payer)) %>% 
+  mutate(difference = doit_payer - a_paye)
+bilan %>% 
+  kable(booktabs = TRUE, digits = 2)
+```
+
+
+

@@ -1,0 +1,10 @@
+recettes,produit,coef_viande,qtite_saucisse
+pate_foie,pate_foie_260ml,260,0
+pate_foie,pate_foie_130ml,130,0
+pate_campagne,pate_campagne_260ml,260,0
+pate_campagne,pate_campagne_200ml,200,0
+pate_campagne,pate_campagne_130ml,130,0
+bocaux_viandes,viandes_3-4p,400,0
+bocaux_viandes,viandes_1-2p,200,0
+bocaux_viandes,saucisses_viandes,300,2
+bocaux_viandes,bocaux_saucisses,0,4
