@@ -14,7 +14,7 @@
   \item{laura_thomas}{}
   \item{marion_judicael}{}
   \item{tiffany}{}
-  \item{ben_suk}{}
+  \item{suk_ben}{}
   \item{commun}{}
   \item{dons}{}
   \item{casse}{}

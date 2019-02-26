@@ -13,7 +13,7 @@
 #'   \item{laura_thomas}{}
 #'   \item{marion_judicael}{}
 #'   \item{tiffany}{}
-#'   \item{ben_suk}{}
+#'   \item{suk_ben}{}
 #'   \item{commun}{}
 #'   \item{dons}{}
 #'   \item{casse}{}
@@ -36,6 +36,8 @@
 #'   \item{Poids de chair (kg)}{}
 #'   \item{Poids des foies (kg)}{}
 #'   \item{Poids de gras (kg)}{}
+#'   \item{'Rendement sans foie (%)'}{}
+#'   \item{'Rendement avec foie (%)'}{}
 #'   \item{Poids viandes + chair + foies (kg)}{}
 #'   \item{Prix viandes + chair + foies au kilo (€/kg)}{}
 #' }
@@ -81,7 +83,7 @@
 #' @format A data frame with 19 rows and 3 variables:
 #' \describe{
 #'   \item{achat}{}
-#'   \item{achateur}{}
+#'   \item{acheteur}{}
 #'   \item{prix}{}
 #' }
 "depenses"

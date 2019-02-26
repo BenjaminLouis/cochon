@@ -31,10 +31,12 @@ gener <- tibble(
   'Poids total (kg)' = 232.6,
   'Prix au kilo (€/kg)' = 4.9,
   'Prix total (€)' = 1139.74,
-  'Poids de viandes (kg)' = poids_viandes,
+  'Poids de viande (kg)' = poids_viandes,
   'Poids de chair (kg)' = 48.17,
   'Poids des foies (kg)' = 3.4,
   'Poids de gras (kg)' = 32.6,
+  'Rendement sans foie (%)' = round(100*(poids_viandes + 48.17)/232.6),
+  'Rendement avec foie (%)' = round(100*poids_total/232.6),
   'Poids viandes + chair + foies (kg)' = poids_total,
   'Prix viandes + chair + foies au kilo (€/kg)' = prix
 )

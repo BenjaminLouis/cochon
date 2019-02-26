@@ -7,7 +7,7 @@
 \format{A data frame with 19 rows and 3 variables:
 \describe{
   \item{achat}{}
-  \item{achateur}{}
+  \item{acheteur}{}
   \item{prix}{}
 }}
 \usage{
