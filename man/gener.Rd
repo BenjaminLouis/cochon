@@ -4,19 +4,7 @@
 \name{gener}
 \alias{gener}
 \title{Tableau de généralités}
-\format{A data frame with 1 rows and 10 variables:
-\describe{
-  \item{Nombre de cochons}{}
-  \item{Poids total (kg)}{}
-  \item{Prix au kilo (€/kg)}{}
-  \item{Prix total (€)}{}
-  \item{Poids de viandes (kg)}{}
-  \item{Poids de chair (kg)}{}
-  \item{Poids des foies (kg)}{}
-  \item{Poids de gras (kg)}{}
-  \item{Poids viandes + chair + foies (kg)}{}
-  \item{Prix viandes + chair + foies au kilo (€/kg)}{}
-}}
+\format{An object of class \code{tbl_df} (inherits from \code{tbl}, \code{data.frame}) with 1 rows and 12 columns.}
 \usage{
 gener
 }
