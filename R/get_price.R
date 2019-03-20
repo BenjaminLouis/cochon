@@ -17,7 +17,7 @@ get_price <- function(svar, unit) {
   tab <- repartition %>%
     filter(recettes == svar) %>%
     select(-recettes) %>%
-    gather("qui", "quantite", steph_luc:casse)
+    gather("qui", "quantite", -produit)
 
   if ("data.frame" %in% class(unit)) {
     tab <- left_join(tab, select(unit, produit, prix_unitaire), by = "produit") %>%

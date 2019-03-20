@@ -20,7 +20,7 @@ get_unitaire <- function(svar,prix_sauc = 0) {
   tab <- repartition %>%
     filter(str_detect(recettes, svar)) %>%
     select(-recettes) %>%
-    gather("key", "value", steph_luc:casse) %>%
+    gather("key", "value", -produit) %>%
     group_by(produit) %>%
     summarise(quantite = sum(value)) %>%
       left_join(.,
