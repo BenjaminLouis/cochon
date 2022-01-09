@@ -1,0 +1,597 @@
+---
+title: "Compte-rendu du weekend cochon family du 1er au 3 mars 2019"
+author: "Benjamin Louis"
+date: "`r format(Sys.Date(), '%d-%m-%Y')`"
+output:
+  rmarkdown::html_vignette:
+    toc: yes
+    number_sections: yes
+  pagedown::html_paged:
+    number_sections: true
+    toc: yes
+  pdf_document:
+    keep_tex: yes
+    latex_engine: xelatex
+    toc: yes
+    number_sections: yes
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+header-includes:
+- \usepackage{pdflscape}
+- \newcommand{\blandscape}{\begin{landscape}}
+- \newcommand{\elandscape}{\end{landscape}}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  echo = FALSE,
+  fig.align = "center",
+  fig.keep = "all",
+  out.width = "100%",
+  dpi = 300,
+  fig.asp = 0.6,
+  fig.width = 6
+)
+library(cochon2019a)
+library(tidyverse)
+library(kableExtra)
+library(here)
+options(knitr.kable.NA = '')
+
+# Répartition des produits
+repartition <- read_csv(file.path(dirname(here()), "cochon2019b","data-raw", "tableau_repartition.csv"))
+
+# Dépenses
+depenses <- read_csv(file.path(dirname(here()), "cochon2019b","data-raw", "depenses.csv"))
+
+# Recettes
+recettes <- read_csv(file.path(dirname(here()), "cochon2019b","data-raw", "recettes.csv")) %>%
+  mutate(poids_total = poids_viandes + poids_foie + poids_chair,
+         prix_total = 330*poids_total/sum(poids_total, na.rm = TRUE))
+
+# Généralites
+poids_viandes <- recettes %>% pull(poids_viandes) %>% sum(., na.rm = TRUE)
+poids_chair <- recettes %>% pull(poids_chair) %>% sum(., na.rm = TRUE)
+poids_foie <- recettes %>% pull(poids_foie) %>% sum(., na.rm = TRUE)
+poids_total <- recettes %>% pull(poids_total) %>% sum(., na.rm = TRUE)
+prix <- 330/poids_total
+
+gener <- tibble(
+  'Nombre de cochons' = 1,
+  'Poids total (kg)' = 96.4,
+  'Prix au kilo (€/kg)' = 3.5,
+  'Prix total (€)' = 330,
+  'Poids de viande (kg)' = poids_viandes,
+  'Poids de chair (kg)' = poids_chair,
+  'Poids des foies (kg)' = poids_foie,
+  'Poids de gras (kg)' = 12.06,
+  'Rendement sans foie (%)' = round(100*(poids_viandes + poids_chair)/96.4),
+  'Rendement avec foie (%)' = round(100*poids_total/96.4),
+  'Poids viandes + chair + foies (kg)' = poids_total,
+  'Prix viandes + chair + foies au kilo (€/kg)' = prix
+)
+
+# Répartition des produits
+coefs <- read_csv(file.path(dirname(here()), "cochon2019b","data-raw", "coefs.csv"))
+```
+
+# TL;DR{-}
+
+_Note culture geek: TL;DR est un sigle composé des initiales de "too long; didn't read", qui peut être traduit par "trop; pas lu". Ce sigle est notamment employé fréquemment dans les articles de blogs pour signifier que la section qui suit [est un résumé du message initial](https://fr.wiktionary.org/wiki/tl;dr) pour ceux qui ont la flemme de tout lire._ 
+
+ce document, non terminé et faisant le bilan du weekend et des comptes, est assez détaillé par soucis de transparence (et aussi un peu parce que je peux pas m'en empêcher) et je peux comprendre que ça ne vous passionne pas. Pour ceux qui veulent juste savoir combien ils doivent et à qui, rendez-vous directement à la section 5 __Qui doit à qui ?__. Pour les autres, bonne lecture!
+
+# Bilan du weekend
+
+## Déroulement du weekend
+
+--------------- A VENIR ----------------------
+
+## Ce qui a été dit
+
+# Généralités
+
+## Quelques chiffres sur les cochons
+
+```{r}
+tibble(Intitulé = names(gener), Valeur = unlist(gener[1,])) %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Généralités sur les cochons") %>% 
+  kable_styling(latex_options = c("hold_position"))
+```
+
+## Quelques chiffres sur les consommables utilisés
+
+---------------- A VENIR ----------------------
+
+## Prix global de la viande
+
+Pour calculer un prix pour les différentes recettes, j'ai ramené le prix de la carcasse au poids de viande + chair + foies. Le foie étant limitant, j'ai choisi de lui donner une valeur au même titre que la viande (sinon le pâté de foie ne valait rien). Au final, on obtient un prix de `r round(pull(gener, "Prix viandes + chair + foies au kilo (€/kg)"))` €/kg.
+
+
+## Répartition dans les recettes
+
+Le tableau 2 donne les poids de viande, chair, foies et total qu'il y a dans chaque recette et l'équivalent en prix. Ce tableau me sert surtout pour calculer ci-après le poids unitaire des recettes en fonction de leur conditionnement. Si la case est vide, c'est que la valeur est de 0.
+
+```{r}
+recettes %>% 
+  mutate_if(is.numeric, ~recode(., `0` = NA_real_)) %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Poids et prix selon les recettes") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "Les poids sont en kilogramme, le prix est en €", threeparttable = T)
+```
+
+\newpage
+
+# Prix des différentes recettes en fonction de leur conditionnement
+
+## Méthode de calcul
+
+Bien qu'un travail collectif de collecte de données ait été effectué lors de ce week-end, certaines données sont manquantes ou trop imprécises pour pouvoir calculer un prix exact de chaque recette. Certaines simplifications méthodologiques ont du être faites.
+
++ Le prix d'une recette est calculé par rapport au prix de la quantité de viande et/ou foie et/ou chair qu'elle contient
+
++ Le gras n'étant pas limitant il n'est pas comptabilisé (ou son prix est égal à 0€ si vous préférez). Ainsi, plus une recette contient en proportion du gras, moins elle est chère en unité de poids. He oui, le cholestérol ne vaut pas grand chose!
+
++ Les autres ingrédients des différentes recettes sont intégrés dans le prix total des courses du weekend qui est divisé au prorata du nombre de personnes. Le prix des ingrédients n'est donc pas contenu dans le prix des recettes.
+
++ De même, les boyaux sont intégrés au prix total des courses et non pas dans le prix des différentes recettes. On pourrait en théorie le faire mais les données sont trop imprécises pour que ça ait du sens. Une estimation très rapide _"à la louche"_ conduit à un prix d'environ 30 cents de boyau pour une saucisse sèche ou un saucisson, environ 20 cents de boyau pour une chipo et environ 3 cents de boyau pour une saucisse fraiche ou un boudin.
+
+__Méthode 1__
+
+Lorsque les recettes sont conditionnées en produit de différentes tailles, un premier calcul consiste à évaluer le prix unitaire des différents conditionnement. La taille du conditionnement donne un coefficient qui, associé à la quantité faite de chaque conditionnement et le prix total de la recette, permet de etrouver le prix unitaire. Je sais que beaucoup s'en foute, mais moi j'adore mettre des formules, alors la voici :
+
+$$PUproduit_{ij} = \frac{coef_{ij} \times P_{total_{j}}}{\sum_{i}\left(coef_{ij} \times quantite_{ij}\right)}$$
+
+où $PUproduit_{ij}$ est le prix unitaire du produit (ou conditionnement) $i$ d'une recette $j$, $coef_{ij}$ est le coefficient associé à ce conditionnement, $P_{total_{j}}$ est le prix de revient total de la recette $j$ (cf Tableau 2) et $quantite_{ij}$ est la quantité totale faite de contionnement $i$ pour la même recette $j$.
+
+Une fois qu'on a le prix unitaire d'un conditonnement, il suffit de le multiplier par la quantité que chaque personne/famille a pris pour savoir ce que doit la personne/famille pour cette recette :
+
+$$Prix_{jk} = \sum_{i}\left(nb_{ijk} \times PUproduit_{ij}\right)$$
+où $Prix_{jk}$ est le prix que doit payer la personne/famille $k$ pour la recette $j$, $nb_{ijk}$ est le nombre du conditionnement $i$ de la recette $j$ prix par la personne/famille $k$ et $PUproduit_{ij}$ est le prix unitaire du produit (ou conditionnement) $i$ de la recette $j$.
+
+__Méthode 2__
+
+Si il n'y a qu'un conditionnement pour une recette, c'est directement la quantité prise par une personne/famille qui est utilisée comme coefficient associé au prix total de la recette pour calculer ce que doit la personne/famille. Ce coefficient peut être un nombre d'unité prise (e.g. j'ai pris 10 caillettes), un poids (e.g. j'ai pris 500g de chipolatas) ou une part (e.g. j'ai pris une part de jambon).
+
+$$Prix_{jk} = \frac{w_{jk} \times P_{total_{j}}}{\sum_{k} w_{jk}}$$
+où où $Prix_{jk}$ est le prix que doit payer la personne/famille $k$ pour la recette $j$, $w_{jk}$ est le coefficient représentant la quantité de la recette $j$ prise par la personne/famille $k$ et $P_{total_{j}}$ est le prix de revient total de la recette $j$ (Tableau 2).
+
+Pour les plus passionnés, suspicieux, fous ou ceux qui s'ennuient, normalement vous avez tout dans ce document pour refaire les calculs et vérifier que je ne me suis pas trompé. Mais attention, les chiffres qui sont dans les tableaux peuvent avoir des décalages de quelques grammes ou centimes à cause des arrondis (j'allais pas laisser plus de deux chiffres décimaux). par contre, vous verrez qu'à la fin on tombe bien!
+
+## Terrine et pâtés
+
+### Pâté de foie
+
+```{r}
+pu_foie <- get_unitaire("pate_foie")
+pu_foie %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Prix unitaire du pâté de foie") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "quantite et coef sont sans unité, prix_unitaire est en €/unité", threeparttable = T)
+```
+
+```{r}
+price_foie <- get_price("pate_foie", unit = pu_foie)
+price_foie %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Coût par personne/famille pour le pâté de foie") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "doit_payer est en €", threeparttable = T)
+```
+
+### Pâté de campagne
+
+Même travail pour le pâté de campagne acvec la méthode 1.
+
+```{r}
+pu_campagne <- get_unitaire("pate_campagne")
+pu_campagne %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Prix unitaire du pâté de campagne") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "quantite et coef sont sans unité, prix_unitaire est en €/unité", threeparttable = T)
+```
+
+Et le tableau des prix à payer.
+
+```{r}
+price_campagne <- get_price("pate_campagne", unit = pu_campagne)
+price_campagne %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Coût par personne/famille pour le pâté de campagne") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "doit_payer est en €", threeparttable = T)
+```
+
+### Terrine au four
+
+
+```{r}
+pu_terrine <- recettes %>% filter(recettes == "terrine_four") %>% pull(prix_total)
+price_terrine <- get_price("terrine_four", unit = pu_terrine)
+
+price_terrine %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Coût par personne/famille pour la terrine au four") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "doit_payer est en €", threeparttable = T)
+```
+
+### Jambonneau
+
+```{r}
+pu_jambonneau <- recettes %>% filter(recettes == "jambonneau") %>% pull(prix_total)
+price_jambonneau <- get_price("jambonneau", unit = pu_jambonneau)
+
+price_jambonneau %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Coût par personne/famille pour le jambonneau") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "doit_payer est en €", threeparttable = T)
+```
+
+
+### Rillettes
+
+D'un commun accord, les rillettes sont considérées comme ayant un coût de viande égal à 0€ car issus de partie qui serait jetées sinon.
+
+## Boudin
+
+### Boudin blanc
+
+Le boudin blanc contient de la chair et on considère que chaque boudin en contien la même quantité. On utilise la méthode 2 avec comme coefficients le poids de boudin pris par chaque personne/famille.
+
+```{r}
+pu_boudin_blanc <- recettes %>% filter(recettes == "boudin_blanc") %>% pull(prix_total)
+price_boudin_blanc <- get_price("boudin_blanc", unit = pu_boudin_blanc)
+
+price_boudin_blanc %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Coût par personne/famille pour le boudin blanc") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "doit_payer est en €", threeparttable = T)
+```
+
+### Boudins noir et créole
+
+D'un commun accord, les boudins noir et créole sont considérés comme ayant un coût de viande égal à 0€ car issus de partie qui serait jetées sinon.
+
+## Saucisses fraiches et chipolatas
+
+### Saucisses fraiches
+
+```{r}
+nb_saucisses <- repartition %>% 
+  filter(produit %in% c("saucisses_fraiches", "saucisses_viandes", "bocaux_saucisses")) %>% 
+  select(-recettes) %>% 
+  gather("key", "value", -produit) %>% 
+  group_by(produit) %>% 
+  summarise(nb = sum(value)) %>% 
+  mutate(coef = recode(produit, bocaux_saucisses = 4, saucisses_fraiches = 1, saucisses_viandes = 2)) %>% 
+  mutate(n = nb*coef) %>% 
+  pull(n) %>% 
+  sum()
+prix_saucisses <- recettes %>% filter(recettes == "saucisses_fraiches") %>% pull(prix_total)
+pu_saucisses_fraiches <- tibble(produit = "saucisses_fraiches",
+                                prix_unitaire = prix_saucisses/nb_saucisses)
+price_saucisses_fraiches <- get_price("saucisses_fraiches", unit = pu_saucisses_fraiches)
+```
+
+Pour les saucisses fraiches, on considère que chaque saucisse contient la même quantité de viande. Sur le coût de revient total de cette recette (Tableau 2), des saucisses ont été prises seules et d'autres sont dans certains bocaux de viande (4 dans les bocaux de saucisses seules et 2 dans le sbocaux de saucisses/viande). Il faut d'abord calculer le prix de revient d'une saucisses en considérant la totalité faite de saucisses. En comptant les fraiches et celles mises en bocaux, au total, `r nb_saucisses` saucisses ont été faites. Le tableau 2 nous dit que le coût total des saucisses est de `r round(prix_saucisses, 2)`€ donc le coût unitaire d'une saucisse est de `r round(pull(pu_saucisses_fraiches, prix_unitaire), 2)`€.
+
+Le tableau 11 donne ce que doit payer chaque personne/famille sur les saucisses fraiches seulement avec la méthode 2 en prenant comme coefficient le nombre de saucisses fraiches prises. Celles mises en bocaux seront comptabilisées dans le prix des bocaux.
+
+```{r}
+price_saucisses_fraiches %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Coût par personne/famille pour les saucisses fraiches") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "doit_payer est en €", threeparttable = T)
+```
+
+### Chipolatas
+
+La méthode 2 est également utilisée ici avec comme coefficients le poids de chipolatas pris par chaque personne/famille, ce qui en fait surement un coût plus précis que pour les saucisses fraiches.
+
+```{r}
+pu_chipo <- recettes %>% filter(recettes == "chipolatas") %>% pull(prix_total)
+price_chipo <- get_price("chipolatas", unit = pu_chipo)
+
+price_chipo %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Coût par personne/famille pour les chipolatas") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "doit_payer est en €", threeparttable = T)
+```
+
+### Chair à saucisses
+
+La méthode 2 est également utilisée ici avec comme coefficients le poids de chipolatas pris par chaque personne/famille, ce qui en fait surement un coût plus précis que pour les saucisses fraiches.
+
+```{r}
+pu_chair <- recettes %>% filter(recettes == "chair") %>% pull(prix_total)
+price_chair <- get_price("chair", unit = pu_chair)
+
+price_chair %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Coût par personne/famille pour la chair à saucisses") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "doit_payer est en €", threeparttable = T)
+```
+
+
+## Saucisses sèches et saucissons
+
+### Saucisses sèches
+
+On considère ici aussi que chaque saucisse sèche contient la même quantité de viande et le nombre prix par chaque personne/famille sert de coefficient dans la méthode 2.
+
+__N.B.__ à mon avis ici il y a plus de différence que pour les saucisses fraiches où les caillettes. Il serait surement plus précis les autres années de peser avant séchage chaque saucisse est de répartir directement. Cela demande un peu plus de logistique car il faut marquer chaque saucisse pour redistribuer convenablement après séchage.
+
+```{r}
+pu_saucisses_seches <- recettes %>% filter(recettes == "saucisses_seches") %>% pull(prix_total)
+price_saucisses_seches  <- get_price("saucisses_seches", unit = pu_saucisses_seches)
+
+price_saucisses_seches %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Coût par personne/famille pour les saucisses sèches") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "doit_payer est en €", threeparttable = T)
+```
+
+### Saucissons
+
+Même travail que pour les saucisses sèches avec la même remarque sur une pesée et répartition avant séchage.
+
+```{r}
+pu_saucissons <- recettes %>% filter(recettes == "saucissons") %>% pull(prix_total)
+price_saucissons  <- get_price("saucissons", unit = pu_saucissons)
+
+price_saucissons %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Coût par personne/famille pour les saucissons") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "doit_payer est en €", threeparttable = T)
+```
+
+## Bocaux viandes
+
+### Bocaux viandes ou saucisses
+
+Les bocaux de viande sont conditionnés en bocaux de différentes tailles avec de la viande seule, de la saucisse seule ou bien les deux. La méthode 1 est appliquée avec la petite différence qu'il faut ajouter le prix des saucisses lorsqu'il y en a. Pour les coefficients liés à a viande, on considère que le bocaux de viande pour 1-2 personnes contiennent environ 200g, ceux de 3-4 personnes environ 400g, ceux qui mélangent viande et saucisses environ 300g. Pour les saucisses, on considère qu'il y en a 2 dans le bocaux saucisses et viande et 4 dans les bocaux de saucisses uniquement.
+
+```{r}
+pu_bocaux_viandes <- get_unitaire("bocaux_viandes", prix_sauc = pull(pu_saucisses_fraiches, prix_unitaire))
+pu_bocaux_viandes %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Prix unitaire des bocaux de viandes") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "les quantités et coefs sont sans unité, les prix sont en €/unité", threeparttable = T)
+```
+
+
+```{r}
+price_bocaux_viandes <- get_price("bocaux_viandes", unit = pu_bocaux_viandes)
+price_bocaux_viandes %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Coût par personne/famille pour les bocaux de viandes") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "doit_payer est en €", threeparttable = T)
+```
+
+
+## Viandes fraiches
+
+### Côte de porc
+
+La méthode 2 est appliquée avec comme coeffficients les poids pris par chacun.
+
+```{r}
+pu_cote_de_porc <- recettes %>% filter(recettes == "cote_de_porc") %>% pull(prix_total)
+price_cote_de_porc  <- get_price("cote_de_porc", unit = pu_cote_de_porc)
+
+price_cote_de_porc %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Coût par personne/famille pour les côtes de porc") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "doit_payer est en €", threeparttable = T)
+```
+
+### Rouelle
+
+La méthode 2 est appliquée avec comme coeffficients les poids pris par chacun.
+
+```{r}
+pu_rouelle <- recettes %>% filter(recettes == "rouelle") %>% pull(prix_total)
+price_rouelle  <- get_price("rouelle", unit = pu_rouelle)
+
+price_rouelle %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Coût par personne/famille pour les rouelles") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "doit_payer est en €", threeparttable = T)
+```
+
+### Roti
+
+La méthode 2 est appliquée avec comme coeffficients les poids pris par chacun.
+
+```{r}
+pu_roti <- recettes %>% filter(recettes == "roti") %>% pull(prix_total)
+price_roti  <- get_price("roti", unit = pu_roti)
+
+price_roti %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Coût par personne/famille pour les rotis") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "doit_payer est en €", threeparttable = T)
+```
+
+### Filet mignon
+
+Le filet mignon a été mangé ensemble, son prix total va dans les dépenses communes.
+
+```{r}
+pu_filet_mignon <- recettes %>% filter(recettes == "filet_mignon") %>% pull(prix_total)
+price_filet_mignon  <- get_price("filet_mignon", unit = pu_filet_mignon)
+
+price_filet_mignon %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Coût par personne/famille pour les filets mignons") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "doit_payer est en €", threeparttable = T)
+```
+
+### Ribs
+
+Les ribs seront mangées ensemble, leur prix total va dans les dépenses communes.
+
+```{r}
+pu_ribs <- recettes %>% filter(recettes == "ribs") %>% pull(prix_total)
+price_ribs  <- get_price("ribs", unit = pu_ribs)
+
+price_ribs %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Coût par personne/famille pour les ribs") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "doit_payer est en €", threeparttable = T)
+```
+
+## Viandes sèches
+
+### Poitrine
+
+On considère que les huit poitrines ont le même poids (car elles n'ont pas été pesées individuellement avant pesage). Le nombre de poitrines prises par personne/famille correspond aux coefficients pour la méthode 2.
+
+```{r}
+pu_poitrine <- recettes %>% filter(recettes == "poitrine") %>% pull(prix_total)
+price_poitrine  <- get_price("poitrine", unit = pu_poitrine)
+
+price_poitrine %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Coût par personne/famille pour les poitrines séchées") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "doit_payer est en €", threeparttable = T)
+```
+
+### Jambon
+
+On divisera le jambon en 7 parts égales que l'on répartira entre chaque personne/famille. 
+
+```{r}
+pu_jambon <- recettes %>% filter(recettes == "jambon") %>% pull(prix_total)
+price_jambon  <- get_price("jambon", unit = pu_jambon)
+
+price_jambon %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Coût par personne/famille pour le jambon") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "doit_payer est en €", threeparttable = T)
+```
+
+
+\newpage
+
+# Prix à payer par personne
+
+## La viande
+
+Une fois qu'on a fait la calcul pour toutes les recettes, pour connaître ce que doit la personne/famille $k$, il suffit de sommer l'ensemble de ce qu'elle doit pour chaque recette.
+
+$$Prix_{k} = \sum_{i} Prix_{jk}$$
+où $Prix_{k}$ est le prix que doit la personne/famille $k$ pour l'ensemble des recettes.
+
+```{r}
+all_prices <- bind_rows(
+  mutate(price_foie, recettes = "pate_foie"),
+  mutate(price_campagne, recettes = "pate_campagne"),
+  mutate(price_terrine, recettes = "pate_terrine_four"),
+  mutate(price_jambonneau, recettes = "jambonneau"),
+  mutate(price_boudin_blanc, recettes = "boudin_blanc"),
+  mutate(price_saucisses_fraiches, recettes = "saucisses_fraiches"),
+  mutate(price_chipo, recettes = "chipolatas"),
+  mutate(price_chair, recettes = "chair"),
+  mutate(price_saucisses_seches, recettes = "saucisses_seches"),
+  mutate(price_saucissons, recettes = "saucissons"),
+  mutate(price_bocaux_viandes, recettes = "bocaux_viandes"),
+  mutate(price_cote_de_porc, recettes = "cote_de_porc"),
+  mutate(price_rouelle, recettes = "rouelle"),
+  mutate(price_roti, recettes = "roti"),
+  mutate(price_filet_mignon, recettes = "filet_mignon"),
+  mutate(price_ribs, recettes = "ribs"),
+  mutate(price_poitrine, recettes = "poitrine"),
+  mutate(price_jambon, recettes = "jambon"),
+) %>% 
+  select(recettes, qui, doit_payer) %>% 
+  group_by(qui) %>% 
+  summarise(doit_payer = sum(doit_payer, na.rm = TRUE))
+
+all_prices %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Coût total par personne/famille pour la viande") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "doit_payer est en €", threeparttable = T)
+```
+
+
+## Achats commun
+
+Le tableau 28 résume les achats communs, toutes personnes/familles confondues. Sont ajoutés dedans le coût de revient de la viande en commun i.e. celle mangée ensemble (`commun`), celle donnée (`dons`) et la casse qu'il y a eu (`casse`).
+
+```{r}
+# price_commun <- bind_rows(
+#   depenses %>%
+#     filter(achat != "cochon") %>%
+#     select(-acheteur) %>% 
+#     group_by(achat) %>% 
+#     summarise(cout = sum(prix)),
+#   all_prices %>% 
+#     filter(qui %in% c("commun", "dons", "casse")) %>% 
+#     rename(achat = qui, cout = doit_payer) %>% 
+#     mutate(achat = paste0("cochon_", achat))
+# )
+price_commun <- all_prices %>% 
+    filter(qui %in% c("commun", "dons", "casse")) %>% 
+    rename(achat = qui, cout = doit_payer) %>% 
+    mutate(achat = paste0("cochon_", achat))
+price_commun_total <- pull(price_commun, cout) %>% sum(., na.rm = TRUE)
+
+price_commun %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Résumé des dépenses communes") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "cout est en €", threeparttable = T)
+```
+
+Le coût de ces achats communs sont répartis entre les personnes/familles au prorata du nombre de personnes, les enfants n'étant pas comptés.
+
+```{r}
+all_commun <- all_prices %>% 
+  filter(!qui %in% c("commun", "dons", "casse")) %>% 
+  select(-doit_payer) %>% 
+  mutate(nb_personne = c(1,1,1,2,2,1,2)) %>% 
+  mutate(doit_payer = nb_personne*price_commun_total/sum(nb_personne)) %>% 
+  select(-nb_personne) 
+all_commun %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Coût total par personne/famille pour les dépenses communes") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "doit_payer est en €", threeparttable = T)
+```
+
+## Total
+
+Pour savoir ce que doit payer chaque personne/famille, on somme le coût de la viande pris par chacun et le coût des dépenses communes que doit chacun pour obtenir le tableau 29.
+
+```{r}
+total_prices <- bind_rows(
+  all_prices %>% 
+    filter(!qui %in% c("commun", "dons", "casse")), 
+  all_commun
+  ) %>% 
+  group_by(qui) %>% 
+  summarise(doit_payer = sum(doit_payer))
+total_prices %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Coût total par personne/famille pour le weekend") %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  footnote(general = "doit_payer est en €", threeparttable = T)
+```
+
+\newpage
+
+# Qui doit à qui ?
+
+
+\newpage
+
+
+```{r}
+repartition %>% 
+  #select(-recettes) %>% 
+  kable(booktabs = TRUE, digits = 2, caption = "Tableau des répartitions des recettes entre les personnes/familles") %>% 
+  kable_styling(latex_options = c("hold_position", "scale_down")) %>%
+  footnote(general = "Les pâtés de foie, de campagne, rilletes, saucisses fraiches, caillettes, saucisses sèches, saucissons, chorizos, boudins, bocaux de viandes, de jambonneau et les poitrines sont en unité (ou pièce); le jambonneau, la terrine au four, le jambon et les autres morceaux de viandes séchés sont en part; les chipolatas, côtes de porc, rouelles, rotis, filets mignon et ribs sont en grammes.", threeparttable = T) %>% 
+  landscape()
+```
+

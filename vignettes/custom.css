@@ -1,0 +1,339 @@
+/* page size */
+@page {
+  size: A4; /* var(--width) doesn't work in browser when printing */
+  @bottom-right {
+    content: counter(page);
+  }
+  margin: 2cm;
+}
+@page :blank {
+
+}
+
+/* store some string variables */
+.shorttitle1 {
+  string-set: h1-text content(text);
+}
+
+.shorttitle2 {
+  string-set: h2-text content(text);
+}
+
+/* left page */
+.running-h1-title {
+  position: running(runningH1Title);
+  width: var(--running-title-width);
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+.running-h1-title:before {
+  content: string(h1-text);
+}
+
+@page chapter:left {
+  @top-right {
+    content: element(runningH1Title);
+    white-space: nowrap !important;
+  }
+}
+
+/* right page */
+.running-h2-title {
+  position: running(runningH2Title);
+  width: var(--running-title-width);
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+.running-h2-title:before {
+  /* We would want to write: */
+  /* content: string(h2-text, start); */
+  /* However, this is yet unsupported by Paged.js, see https://gitlab.pagedmedia.org/tools/pagedjs/issues/38 */
+  content: string(h2-text);
+}
+@page chapter:right {
+  @top-left {
+    content: element(runningH2Title);
+    white-space: nowrap !important;
+  }
+}
+
+/* New chapter page */
+@page chapter:first {
+  @top-left {
+    content: none;
+  }
+  @top-right {
+    content: none;
+  }
+}
+@page :first {
+  margin-top: 9cm;
+  @top-left {
+    content: none;
+  }
+  @top-right {
+    content: none;
+  }
+  @bottom-right {
+    content: none !important;
+  }
+}
+
+/* Front matter*/
+@page frontmatter {
+  @bottom-right {
+    content: counter(page, lower-roman);
+  }
+}
+@page frontmatter:left {
+  @top-right {
+    content: element(runningH1Title);
+    white-space: nowrap !important;
+  }
+}
+@page frontmatter:right {
+  @top-left {
+    content: element(runningH1Title);
+    white-space: nowrap !important;
+  }
+}
+@page frontmatter:first {
+  @top-left {
+    content: none;
+  }
+  @top-right {
+    content: none;
+  }
+}
+
+/* page breaks; aka CSS fragmentation */
+.level1 {
+  break-before: avoid;
+  page: chapter;
+}
+.front-matter-container .level1 {
+  page: frontmatter;
+}
+h1, h2, h3, h4, h5, h6 {
+  break-after: avoid;
+}
+.footenotes {
+  break-before: always;
+  break-after: always;
+}
+.figure {
+  break-inside: avoid;
+}
+
+/* reset page numbering after front matter */
+.front-matter-container+.level1 h1 {
+  counter-reset: page;
+}
+
+/*-----------*/
+/* My Custom */
+/*-----------*/
+
+
+a {
+  color: rgb(62,153,36);
+}
+
+p {
+  text-align: justify;
+  text-align-last: left;
+  display: block;
+  clear: both;
+}
+
+#TOC::before {
+  content: "Table des matières";
+  break-after: avoid;
+}
+
+.break-before-me {
+  break-before: page;
+}
+
+.dont-break-before {
+  break-before: avoid-page !important;
+}
+
+
+
+/* GRID */
+/* ----- */
+
+/* CSS */
+/* GRID SYSTEM */
+/* see http://j4n.co/blog/Creating-your-own-css-grid-system */
+/*----------------------------------------------------------*/
+.grid-container {
+  width: 100%;
+}
+
+/*-- our cleafix hack -- */
+.row:before,
+.row:after {
+  content: "";
+  display: block;
+  clear: both;
+}
+
+[class*='col-'] {
+  float: left;
+  min-height: 1px;
+  /*width: 100% / 12;
+  /*-- our gutter -- */
+  /*padding: 0px; */
+  /*background-color: #FFDCDC;*/
+}
+
+.col-1 {
+  width: 8.33333%;
+}
+
+.col-offset-1 {
+  margin-left: 8.33333%;
+}
+
+.col-2 {
+  width: 16.66667%;
+}
+
+.col-offset-2 {
+  margin-left: 16.66667%;
+}
+
+.col-3 {
+  width: 25%;
+}
+
+.col-offset-3 {
+  margin-left: 25%;
+}
+
+.col-4 {
+  width: 33.33333%;
+}
+
+.col-offset-4 {
+  margin-left: 33.33333%;
+}
+
+.col-5 {
+  width: 41.66667%;
+}
+
+.col-offset-5 {
+  margin-left: 41.66667%;
+}
+
+.col-6 {
+  width: 50%;
+}
+
+.col-offset-6 {
+  margin-left: 50%;
+}
+
+.col-7 {
+  width: 58.33333%;
+}
+
+.col-offset-7 {
+  margin-left: 58.33333%;
+}
+
+.col-8 {
+  width: 66.66667%;
+}
+
+.col-offset-8 {
+  margin-left: 66.66667%;
+}
+
+.col-9 {
+  width: 75%;
+}
+
+.col-offset-9 {
+  margin-left: 75%;
+}
+
+.col-10 {
+  width: 83.33333%;
+}
+
+.col-offset-10 {
+  margin-left: 83.33333%;
+}
+
+.col-11 {
+  width: 91.66667%;
+}
+
+.col-offset-11 {
+  margin-left: 91.66667%;
+}
+
+.col-12 {
+  width: 100%;
+}
+
+.col-offset-12 {
+  margin-left: 100%;
+}
+
+
+/* TABLE */
+/* ----- */
+
+table {
+  border-collapse: collapse;
+  border-bottom: none;
+  border-top: 5px solid rgb(85,85,85);
+  max-width: 100%;
+  font-size: 12px;
+}
+
+
+tbody > tr > td,
+tfoot > tr > td {
+  background-color: white;
+}
+
+thead, thead > tr {
+  border-bottom: 1px solid black;
+  background-color: rgba(23,37,45,1);
+  color: rgb(230,230,230);
+  /*border-left: 5px solid rgb(85,85,85);
+  border-right: 5px solid rgb(85,85,85);*/
+}
+
+tbody {
+  border-bottom: 5px solid rgb(85,85,85);
+  border-top: 3px solid rgb(23,37,45);
+ /* border-left: 5px solid rgb(85,85,85);
+  border-right: 5px solid rgb(85,85,85);*/
+}
+
+th, td {
+  padding: 2px 5px;
+  vertical-align: top;
+  /*border-bottom: 1px solid black;*/
+}
+
+.rotate90 {
+  writing-mode: vertical-rl;
+  margin-right: 0;
+  page-break-inside: auto;
+}
+
+.front-matter-container:last-child {
+  page-break-after: avoid;
+}
+
+.small table{
+  font-size : 10px;
+}
