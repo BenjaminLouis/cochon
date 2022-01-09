@@ -1,0 +1,60 @@
+---
+title: "moy_repartition"
+author: "Benjamin Louis"
+date: "09/01/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  echo = FALSE,
+  fig.align = "center",
+  fig.keep = "all",
+  out.width = "100%",
+  dpi = 300,
+  fig.asp = 0.6,
+  fig.width = 6
+)
+library(cochon2019a)
+library(tidyverse)
+library(kableExtra)
+library(here)
+options(knitr.kable.NA = '')
+```
+
+```{r}
+repartition_2020 <- read_csv(file.path(dirname(here()), "cochon2020","data-raw", "tableau_repartition.csv"),
+                             locale = locale(decimal_mark = ","))
+repartition_2019 <- cochon2019a::repartition
+```
+
+```{r}
+bind_rows(
+  '2019' = repartition_2019 %>% 
+    pivot_longer(
+      cols = -c(recettes, produit),
+      names_to = "qui",
+      values_to = "quantite"
+    ),
+  '2020' = repartition_2020 %>% 
+    pivot_longer(
+      cols = -c(recettes, produit),
+      names_to = "qui",
+      values_to = "quantite"
+    ),
+  .id = "annee"
+) %>% 
+  select(recettes, produit, qui, annee, quantite) %>% 
+  arrange(recettes, produit, qui) %>% 
+  pivot_wider(
+    names_from = "qui",
+    values_from = "quantite"
+  ) %>% 
+  complete(nesting(recettes, produit), annee) %>% 
+  kable() %>% 
+  kable_styling() %>% 
+  collapse_rows(columns = 1:2, valign = "top")
+```
+
